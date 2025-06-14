@@ -22,6 +22,7 @@ from .funcs import (
     u16,
     u32,
     u64,
+    Instance,
     Isodate,
     Url,
     Uri,
@@ -39,3 +40,5 @@ from .funcs import (
     Not,
     DictError,
 )
+
+from .scheme import Scheme

@@ -16,6 +16,13 @@ def expect(func, exceptions, args=None):
         assert 0
 
 
+sche = Scheme()
+
+
+def dictcheck(*args):
+    sche.check(*args)
+
+
 def dictexpect(msg, *args):
     expect(lambda: dictcheck(*args), DictError, (msg,))
 
