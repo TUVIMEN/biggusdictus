@@ -275,14 +275,15 @@ def isfrozenset(w, checker=None, x=0, y=None):
     isiterable(frozenset, w, checker, x, y)
 
 
-def match_expr(value, expr):
+def match_expr(value, expr: Callable | type):
     if not isinstance(expr, tuple | list):
         if (r := replacements.get(expr)) is not None:
             r(value)
         elif isinstance(expr, Callable):
             expr(value)
         else:
-            raise TypeError(expr)
+            assert_instance(expr, type)
+            assert_instance(value, expr)
         return
 
     if len(expr) == 0:
@@ -300,8 +301,11 @@ def match_expr(value, expr):
         func = ret
     elif (r := replacements.get(func)) is not None:
         func = r
-    elif not isinstance(func, Callable):
-        raise TypeError(expr)
+    elif isinstance(func, Callable):
+        pass
+    else:
+        assert_instance(expr, type)
+        assert_instance(value, expr)
 
     func(value, *args)
 
