@@ -131,3 +131,32 @@ dictexpect(
     (None, "a", bool),
     (None, "a", str),
 )
+
+dictexpect(
+    ".a: 0 is not an instance of <class 'type'>",
+    t2,
+    False,
+    ("a", bool),
+    ("a", 0),
+)
+
+
+class Nonstandardtype:
+    pass
+
+
+dictexpect(
+    ".a: False is not an instance of <class '__main__.Nonstandardtype'>",
+    t2,
+    False,
+    ("a", bool),
+    ("a", Nonstandardtype),
+)
+
+t3 = {"d": Nonstandardtype()}
+
+dictcheck(
+    t3,
+    False,
+    ("d", Nonstandardtype),
+)
