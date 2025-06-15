@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from dictcheck import *
+from biggusdictus import *
 
 
 def expect(func, exceptions, args=None):
