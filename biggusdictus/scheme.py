@@ -105,6 +105,8 @@ class Scheme:
 
             if isinstance(i, tuple | list):
                 ret += self.schemeprint(i)
+            elif i == isNone:
+                ret += "None"
             elif isinstance(i, type) or isinstance(i, Callable):
                 if (r := dict_by_item(self.replacements, i)) is not None:
                     ret += r.__name__

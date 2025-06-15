@@ -61,6 +61,7 @@ def isbool(w, replacements):
 
 def Is(w, replacements, *args):
     for i in args:
+        print("bbbbbbbbbb", w, i)
         if w is not i:
             continue
         return
@@ -76,7 +77,7 @@ def Eq(w, replacements, *args):
 
 
 def isNone(w, replacements):
-    Is(w, None)
+    Is(w, replacements, None)
 
 
 def inrange(w, x, y):

@@ -74,14 +74,21 @@ class TypeAny(Type):
 
 class TypeNone(Type):
     def conv(self, x) -> dict:
+        print("aaaaaaaaaa", x)
         isNone(x, self.replacements)
         return {}
+
+    def func(self) -> Callable:
+        return isNone
 
 
 class TypeBool(Type):
     def conv(self, x) -> dict:
         isbool(x, self.replacements)
         return {}
+
+    def func(self) -> Callable:
+        return isbool
 
 
 class TypeNumber(Type):
