@@ -2,6 +2,7 @@
 # by Dominik Stanisław Suchora <hexderm@gmail.com>
 # License: GNU GPLv3
 
+import itertools
 from typing import Callable, Tuple
 
 from .funcs import (
@@ -19,167 +20,256 @@ from .funcs import (
     isfrozenset,
     dictcheck,
     Instance,
+    Or,
 )
 
 
-def conv_none(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    isNone(x)
-    return isNone, []
+class Type:
+    def __init__(self, typelist, replacements):
+        self.typelist = typelist
+        self.replacements = replacements
+
+        self.state = {}
+
+    def conv(self, x) -> dict:
+        return {}
+
+    def add(self, x):
+        state = self.conv(x)
+        if self.state == {}:
+            self.state = state
+        else:
+            self.merge(self.state, state)
+
+    def func(self):
+        return Instance
+
+    def args(self) -> list:
+        return []
+
+    def merge(self, dest: dict, src: dict):
+        pass
 
 
-def conv_bool(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    isbool(x)
-    return isbool, []
+class TypeNone(Type):
+    def conv(self, x) -> dict:
+        isNone(x, self.replacements)
+        return {}
 
 
-def update_range(x: int | float, state: dict):
-    if state["min"] is None:
-        state["min"] = x
-    else:
-        state["min"] = min(state["min"], x)
-
-    if state["max"] is None:
-        state["max"] = x
-    else:
-        state["max"] = max(state["max"], x)
+class TypeBool(Type):
+    def conv(self, x) -> dict:
+        isbool(x, self.replacements)
+        return {}
 
 
-def args_range(state: dict, unsigned: bool = False) -> Tuple[int | float]:
-    s_max = state["max"]
-    if unsigned:
-        if s_max is None:
-            return tuple()
-        return (s_max,)
+class TypeNumber(Type):
+    def conv(self, x) -> dict:
+        state = {"min": x, "max": x, "float": False}
 
-    s_min = state["min"]
-    if state["max"] is None:
-        if state["min"] is None:
-            return tuple()
-        return (s_min,)
-
-    return s_min, s_max
-
-
-def conv_number(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    if state == {}:
-        state.update({"min": None, "max": None, "float": False})
-
-    if not state["float"]:
         try:
-            isint(x)
+            isint(x, self.replacements)
         except DictError:
             pass
         else:
-            update_range(x, state)
-            if state["min"] is not None and state["min"] >= 0:
-                return uint, list(*args_range(state, True))
-            return isint, list(*args_range(state))
+            return state
 
-    isfloat(x)
-    state["float"] = True
+        isfloat(x, self.replacements)
+        state["float"] = True
 
-    update_range(x, state)
-    return isfloat, list(*args_range(state))
+        return state
 
+    def func(self) -> Callable:
+        if self.state["float"]:
+            return isfloat
+        if self.state["min"] >= 0:
+            return uint
+        return isint
 
-class SchemeType:
-    def __init__(self, types):
-        self.types = types
+    def args(self) -> list:
+        return [self.state["min"], self.state["max"]]
 
-
-def conv_type(x, types: dict, typelist: list[dict]):
-    for i in typelist:
-        state = types.get(i, {})
-        try:
-            func, args = i(x, state, typelist)
-        except DictError:
-            continue
-
-        types[i] = {"func": func, "args": args, "state": state}
-        return
-
-    types[type(x)] = {"func": Instance, "args": [type(x)], "state": {}}
+    def merge(self, dest: dict, src: dict):
+        dest["float"] = dest["float"] | src["float"]
+        dest["min"] = min(dest["min"], src["min"])
+        dest["max"] = max(dest["max"], src["max"])
 
 
-def conv_iterable(tfunc, x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    if state == {}:
-        state.update({"min": None, "max": None, "types": {}})
+class Types(Type):
+    def conv(self, x) -> dict:
+        types = {}
 
-    tfunc(x)
+        for i in reversed(self.typelist):
+            t = types.get(i, i(self.typelist, self.replacements))
 
-    size = len(x)
-    update_range(size, state)
+            try:
+                t.add(x)
+            except DictError:
+                continue
 
-    for i in x:
-        conv_type(i, state["types"], typelist)
+            types[i] = t
+            return types
 
-    return tfunc, list(SchemeType(state["types"]), *args_range(state))
+        assert 0
 
+    def types(self) -> list:
+        ret = []
+        state = self.state
 
-def conv_list(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    return conv_iterable(islist, x, state, typelist)
+        for i in state.keys():
+            val = state[i]
+            ret.append((val.func(), *val.args()))
+        return ret
 
+    def merge(self, dest: dict, src: dict):
+        s_dest = set(dest.keys())
+        s_src = set(src.keys())
 
-def conv_tuple(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    return conv_iterable(istuple, x, state, typelist)
+        for i in s_src - s_dest:
+            dest[i] = src[i]
 
-
-def conv_set(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    return conv_iterable(isset, x, state, typelist)
-
-
-def conv_frozenset(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    return conv_iterable(isfrozenset, x, state, typelist)
-
-
-def conv_text(tfunc, x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    if state == {}:
-        state.update({"min": None, "max": None})
-
-    tfunc(x)
-
-    size = len(x)
-    update_range(size, state)
-
-    return tfunc, list(*args_range(state))
+        for i in s_src & s_dest:
+            dest[i].merge(dest[i].state, src[i].state)
 
 
-def conv_string(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    return conv_text(isstr, x, state, typelist)
+class Iterable(Type):
+    def __init__(self, tfunc, typelist, replacements):
+        self.tfunc = tfunc
+        super().__init__(typelist, replacements)
 
+    def conv(self, x) -> dict:
+        self.tfunc(x, self.replacements)
 
-def conv_bytes(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    return conv_text(isbytes, x, state, typelist)
+        size = len(x)
+        types = Types(self.typelist, self.replacements)
+        state = {"min": size, "max": size, "types": types}
 
+        for i in x:
+            types.add(i)
 
-def conv_dict_args(state: dict) -> list:
-    ret = []
-    for i in state.keys():
-        val = state[i]
-        types = SchemeType(val["types"])
+        return state
 
-        if val["optional"]:
-            ret.append((None, i, types))
+    def func(self):
+        return self.tfunc
+
+    def args(self):
+        t = self.state["types"].types()
+        if len(t) == 1:
+            types = t[0]
         else:
-            ret.append((i, types))
+            types = (Or, *t)
 
-    return ret
+        return [types, self.state["min"], self.state["max"]]
+
+    def merge(self, dest: dict, src: dict):
+        dest["min"] = min(dest["min"], src["min"])
+        dest["max"] = max(dest["max"], src["max"])
+
+        types = dest["types"]
+        types.merge(types.state, src["types"].state)
 
 
-def conv_dict(x, state: dict, typelist: list[dict]) -> Tuple[Callable, list]:
-    Instance(x, dict)
+class TypeList(Iterable):
+    def __init__(self, typelist, replacements):
+        super().__init__(islist, typelist, replacements)
 
-    x_keys = set(x.keys())
-    state_keys = set(state.keys())
 
-    for i in state_keys - x_keys:
-        state[i]["optional"] = True
+class TypeTuple(Iterable):
+    def __init__(self, typelist, replacements):
+        super().__init__(istuple, typelist, replacements)
 
-    for i in x_keys:
-        x_value = x[i]
-        state_value = state.get(i, {"optional": False, "types": {}})
 
-        conv_type(x_value, state_value["types"], typelist)
-        state[i] = state_value
+class TypeSet(Iterable):
+    def __init__(self, typelist, replacements):
+        super().__init__(isset, typelist, replacements)
 
-    return dictcheck, conv_dict_args(state)
+
+class TypeFrozenset(Iterable):
+    def __init__(self, typelist, replacements):
+        super().__init__(isfrozenset, typelist, replacements)
+
+
+class Text(Type):
+    def __init__(self, tfunc, typelist, replacements):
+        self.tfunc = tfunc
+        super().__init__(typelist, replacements)
+
+    def conv(self, x) -> dict:
+        self.tfunc(x, self.replacements)
+
+        size = len(x)
+        return {"min": size, "max": size}
+
+    def func(self):
+        return self.tfunc
+
+    def args(self):
+        return [self.state["min"], self.state["max"]]
+
+    def merge(self, dest: dict, src: dict):
+        dest["min"] = min(dest["min"], src["min"])
+        dest["max"] = max(dest["max"], src["max"])
+
+
+class TypeStr(Text):
+    def __init__(self, typelist, replacements):
+        super().__init__(isstr, typelist, replacements)
+
+
+class TypeBytes(Text):
+    def __init__(self, typelist, replacements):
+        super().__init__(isbytes, typelist, replacements)
+
+
+class TypeDict(Type):
+    def conv(self, x) -> dict:
+        Instance(x, self.replacements, dict)
+        state = {}
+
+        for i in x.keys():
+            val = x[i]
+            types = Types(self.typelist, self.replacements)
+            types.add(val)
+
+            state[i] = {
+                "optional": False,
+                "types": types,
+            }
+
+        return state
+
+    def func(self):
+        return dictcheck
+
+    def args(self):
+        ret = []
+        state = self.state
+        for i in state.keys():
+            val = state[i]
+            t = val["types"].types()
+            if len(t) == 1:
+                types = t[0]
+            else:
+                types = (Or, *t)
+
+            if val["optional"]:
+                ret.append((None, i, *types))
+            else:
+                ret.append((i, *types))
+
+        return ret
+
+    def merge(self, dest: dict, src: dict):
+        dest_keys = set(dest.keys())
+        src_keys = set(src.keys())
+
+        for i in dest_keys - src_keys:
+            dest[i]["optional"] = True
+
+        for i in src_keys - dest_keys:
+            dest[i] = src[i]
+            dest[i]["optional"] = True
+
+        for i in dest_keys & src_keys:
+            types = dest[i]["types"]
+            types.merge(types.state, src[i]["types"].state)

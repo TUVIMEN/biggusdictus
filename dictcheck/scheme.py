@@ -17,23 +17,22 @@ from .funcs import (
     dictcheck,
 )
 from .load import (
-    conv_none,
-    conv_bool,
-    conv_number,
-    conv_list,
-    conv_set,
-    conv_frozenset,
-    conv_tuple,
-    conv_string,
-    conv_bytes,
-    conv_dict,
+    Type,
+    TypeNone,
+    TypeBool,
+    TypeNumber,
+    TypeList,
+    TypeSet,
+    TypeFrozenset,
+    TypeTuple,
+    TypeDict,
+    TypeStr,
+    TypeBytes,
 )
 
 
 class Scheme:
     def __init__(self):
-        self.scheme = None
-
         self.replacements = {
             None: isNone,
             bool: isbool,
@@ -49,17 +48,20 @@ class Scheme:
         }
 
         self.types = [
-            conv_none,
-            conv_bool,
-            conv_number,
-            conv_list,
-            conv_set,
-            conv_frozenset,
-            conv_tuple,
-            conv_string,
-            conv_bytes,
-            conv_dict,
+            Type,
+            TypeNone,
+            TypeBool,
+            TypeNumber,
+            TypeList,
+            TypeSet,
+            TypeFrozenset,
+            TypeTuple,
+            TypeDict,
+            TypeStr,
+            TypeBytes,
         ]
+
+        self.t = TypeDict(self.types, self.replacements)
 
     def check(self, data: dict, *args):
         if len(args) == 0:
@@ -70,11 +72,15 @@ class Scheme:
             dictcheck(data, self.replacements, *args)
 
     def merge(self, scheme: dict):
-        if self.scheme is None:
-            self.scheme = scheme
-            return
+        # if self.scheme is None:
+        # self.scheme = scheme
+        # return
 
         pass
 
-    def append(self, data: dict):
-        self.merge(conv_dict(data, {}, self.types))
+    @property
+    def scheme(self):
+        pass
+
+    def add(self, data: dict):
+        self.t.add(data)

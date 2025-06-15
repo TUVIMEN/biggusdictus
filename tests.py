@@ -115,7 +115,7 @@ dictexpect(
 )
 
 dictexpect(
-    ".hash: 32 length is not in range of 40 to -",
+    ".hash: 32 length is not in range of 40 to 40",
     t2,
     False,
     ("hash", Hash),
