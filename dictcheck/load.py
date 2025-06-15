@@ -32,7 +32,7 @@ class Type:
         self.state = {}
 
     def conv(self, x) -> dict:
-        return {}
+        return {"type": type(x)}
 
     def add(self, x):
         state = self.conv(x)
@@ -45,10 +45,13 @@ class Type:
         return Instance
 
     def args(self) -> list:
-        return []
+        return [self.state["type"]]
 
     def merge(self, dest: dict, src: dict):
         pass
+
+    def join(self, src: "Type"):
+        self.merge(self.state, src.state)
 
 
 class TypeNone(Type):
@@ -129,7 +132,7 @@ class Types(Type):
             dest[i] = src[i]
 
         for i in s_src & s_dest:
-            dest[i].merge(dest[i].state, src[i].state)
+            dest[i].join(src[i])
 
 
 class Iterable(Type):
@@ -165,8 +168,7 @@ class Iterable(Type):
         dest["min"] = min(dest["min"], src["min"])
         dest["max"] = max(dest["max"], src["max"])
 
-        types = dest["types"]
-        types.merge(types.state, src["types"].state)
+        dest["types"].join(src["types"])
 
 
 class TypeList(Iterable):
@@ -271,5 +273,4 @@ class TypeDict(Type):
             dest[i]["optional"] = True
 
         for i in dest_keys & src_keys:
-            types = dest[i]["types"]
-            types.merge(types.state, src[i]["types"].state)
+            dest[i]["types"].join(src[i]["types"])

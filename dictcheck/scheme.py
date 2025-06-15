@@ -61,26 +61,27 @@ class Scheme:
             TypeBytes,
         ]
 
-        self.t = TypeDict(self.types, self.replacements)
+        self.struct = TypeDict(self.types, self.replacements)
 
     def check(self, data: dict, *args):
         if len(args) == 0:
-            if self.scheme is None:
+            if self.struct.state == {}:
                 raise DictError("scheme wasn't specified")
-            dictcheck(data, self.replacements, *self.scheme)
+            assert dictcheck == self.struct.func()
+            dictcheck(data, self.replacements, *self.struct.args())
         else:
             dictcheck(data, self.replacements, *args)
 
-    def merge(self, scheme: dict):
-        # if self.scheme is None:
-        # self.scheme = scheme
-        # return
+    def merge(self, scheme: "Scheme"):
+        if self.struct.state == {}:
+            self.struct = scheme.struct
+            return
 
-        pass
+        self.struct.join(scheme.struct)
 
     @property
     def scheme(self):
         pass
 
     def add(self, data: dict):
-        self.t.add(data)
+        self.struct.add(data)
