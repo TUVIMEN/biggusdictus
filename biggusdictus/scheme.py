@@ -2,6 +2,8 @@
 # by Dominik Stanisław Suchora <hexderm@gmail.com>
 # License: GNU GPLv3
 
+from typing import Callable
+
 from .funcs import (
     DictError,
     isNone,
@@ -31,6 +33,13 @@ from .load import (
     TypeUrl,
     TypeIsodate,
 )
+
+
+def dict_by_item(data, item, default=None):
+    for i in data.keys():
+        if data[i] == item:
+            return i
+    return default
 
 
 class Scheme:
@@ -83,9 +92,33 @@ class Scheme:
 
         self.struct.join(scheme.struct)
 
+    def schemeprint(self, itern: tuple | list) -> str:
+        tupl = isinstance(itern, tuple)
+        ret = "(" if tupl else "["
+
+        g = 0
+
+        for i in itern:
+            if g != 0 or (tupl and g == len(itern) - 1):
+                ret += ", "
+            g += 1
+
+            if isinstance(i, tuple | list):
+                ret += self.schemeprint(i)
+            elif isinstance(i, type) or isinstance(i, Callable):
+                if (r := dict_by_item(self.replacements, i)) is not None:
+                    ret += r.__name__
+                else:
+                    ret += i.__name__
+            else:
+                ret += repr(i)
+
+        ret += ")" if tupl else "]"
+        return ret
+
     @property
-    def scheme(self):
-        pass
+    def scheme(self) -> str:
+        return self.schemeprint(self.struct.args())
 
     def add(self, data: dict):
         self.struct.add(data)

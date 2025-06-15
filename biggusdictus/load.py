@@ -161,12 +161,33 @@ class TypeIsodate(Type):
         return Isodate
 
 
+def expr_simplified(t) -> list:
+    def simpler(arr):
+        for i, j in enumerate(arr):
+            if len(j) == 1:
+                arr[i] = j[0]
+        return arr
+
+    size = len(t)
+    if size == 0:
+        return []
+
+    if size == 1:
+        types = simpler([t[0]])
+    else:
+        types = [Or, *simpler(t)]
+
+    return types
+
+
 class Types(Type):
     def conv(self, x) -> dict:
         types = {}
 
         for i in reversed(self.typelist):
-            t = types.get(i, i(self.typelist, self.replacements))
+            t = types.get(
+                i, i(self.typelist, self.replacements, pedantic=self.pedantic)
+            )
 
             try:
                 t.add(x)
@@ -207,7 +228,7 @@ class Iterable(Type):
         self.tfunc(x, self.replacements)
 
         size = len(x)
-        types = Types(self.typelist, self.replacements)
+        types = Types(self.typelist, self.replacements, pedantic=self.pedantic)
         state = {"min": size, "max": size, "types": types}
 
         for i in x:
@@ -219,11 +240,9 @@ class Iterable(Type):
         return self.tfunc
 
     def args(self) -> list:
-        t = self.state["types"].types()
-        if len(t) == 1:
-            types = t[0]
-        else:
-            types = (Or, *t)
+        types = tuple(expr_simplified(self.state["types"].types()))
+        if len(types) == 1:
+            types = types[0]
 
         return [
             types,
@@ -298,7 +317,7 @@ class TypeDict(Type):
 
         for i in x.keys():
             val = x[i]
-            types = Types(self.typelist, self.replacements)
+            types = Types(self.typelist, self.replacements, pedantic=self.pedantic)
             types.add(val)
 
             state[i] = {
@@ -316,11 +335,10 @@ class TypeDict(Type):
         state = self.state
         for i in state.keys():
             val = state[i]
-            t = val["types"].types()
-            if len(t) == 1:
-                types = t[0]
-            else:
-                types = (Or, *t)
+            types = expr_simplified(val["types"].types())
+
+            if len(types) == 1 and isinstance(types[0], tuple | list):
+                types = types[0]
 
             if val["optional"]:
                 ret.append((None, i, *types))

@@ -261,19 +261,19 @@ def isiterable(t, w, replacements, checker=-1, x=0, y=None):
             match_expr(i, replacements, checker)
 
 
-def islist(w, replacements, checker=None, x=0, y=None):
+def islist(w, replacements, checker=-1, x=0, y=None):
     isiterable(list, w, replacements, checker, x, y)
 
 
-def istuple(w, replacements, checker=None, x=0, y=None):
+def istuple(w, replacements, checker=-1, x=0, y=None):
     isiterable(tuple, w, replacements, checker, x, y)
 
 
-def isset(w, replacements, checker=None, x=0, y=None):
+def isset(w, replacements, checker=-1, x=0, y=None):
     isiterable(set, w, replacements, checker, x, y)
 
 
-def isfrozenset(w, replacements, checker=None, x=0, y=None):
+def isfrozenset(w, replacements, checker=-1, x=0, y=None):
     isiterable(frozenset, w, replacements, checker, x, y)
 
 
