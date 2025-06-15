@@ -31,9 +31,10 @@ from .funcs import (
 
 
 class Type:
-    def __init__(self, typelist, replacements):
+    def __init__(self, typelist, replacements, pedantic=False):
         self.typelist = typelist
         self.replacements = replacements
+        self.pedantic = pedantic
 
         self.state = {}
 
@@ -107,7 +108,9 @@ class TypeNumber(Type):
         return isint
 
     def args(self) -> list:
-        return [self.state["min"], self.state["max"]]
+        if self.pedantic:
+            return [self.state["min"], self.state["max"]]
+        return []
 
     def merge(self, dest: dict, src: dict):
         dest["float"] = dest["float"] | src["float"]
@@ -196,9 +199,9 @@ class Types(Type):
 
 
 class Iterable(Type):
-    def __init__(self, tfunc, typelist, replacements):
+    def __init__(self, tfunc, typelist, replacements, pedantic=False):
         self.tfunc = tfunc
-        super().__init__(typelist, replacements)
+        super().__init__(typelist, replacements, pedantic=pedantic)
 
     def conv(self, x) -> dict:
         self.tfunc(x, self.replacements)
@@ -222,7 +225,10 @@ class Iterable(Type):
         else:
             types = (Or, *t)
 
-        return [types, self.state["min"], self.state["max"]]
+        return [
+            types,
+            *([self.state["min"], self.state["max"]] if self.pedantic else []),
+        ]
 
     def merge(self, dest: dict, src: dict):
         dest["min"] = min(dest["min"], src["min"])
@@ -232,29 +238,29 @@ class Iterable(Type):
 
 
 class TypeList(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(islist, typelist, replacements)
+    def __init__(self, typelist, replacements, pedantic=False):
+        super().__init__(islist, typelist, replacements, pedantic=pedantic)
 
 
 class TypeTuple(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(istuple, typelist, replacements)
+    def __init__(self, typelist, replacements, pedantic=False):
+        super().__init__(istuple, typelist, replacements, pedantic=pedantic)
 
 
 class TypeSet(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(isset, typelist, replacements)
+    def __init__(self, typelist, replacements, pedantic=False):
+        super().__init__(isset, typelist, replacements, pedantic=pedantic)
 
 
 class TypeFrozenset(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(isfrozenset, typelist, replacements)
+    def __init__(self, typelist, replacements, pedantic=False):
+        super().__init__(isfrozenset, typelist, replacements, pedantic=pedantic)
 
 
 class Text(Type):
-    def __init__(self, tfunc, typelist, replacements):
+    def __init__(self, tfunc, typelist, replacements, pedantic=False):
         self.tfunc = tfunc
-        super().__init__(typelist, replacements)
+        super().__init__(typelist, replacements, pedantic=pedantic)
 
     def conv(self, x) -> dict:
         self.tfunc(x, self.replacements)
@@ -266,7 +272,9 @@ class Text(Type):
         return self.tfunc
 
     def args(self) -> list:
-        return [self.state["min"], self.state["max"]]
+        if self.pedantic:
+            return [self.state["min"], self.state["max"]]
+        return []
 
     def merge(self, dest: dict, src: dict):
         dest["min"] = min(dest["min"], src["min"])
@@ -274,13 +282,13 @@ class Text(Type):
 
 
 class TypeStr(Text):
-    def __init__(self, typelist, replacements):
-        super().__init__(isstr, typelist, replacements)
+    def __init__(self, typelist, replacements, pedantic=False):
+        super().__init__(isstr, typelist, replacements, pedantic=pedantic)
 
 
 class TypeBytes(Text):
-    def __init__(self, typelist, replacements):
-        super().__init__(isbytes, typelist, replacements)
+    def __init__(self, typelist, replacements, pedantic=False):
+        super().__init__(isbytes, typelist, replacements, pedantic=pedantic)
 
 
 class TypeDict(Type):

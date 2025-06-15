@@ -34,7 +34,7 @@ from .load import (
 
 
 class Scheme:
-    def __init__(self):
+    def __init__(self, pedantic=False):
         self.replacements = {
             None: isNone,
             bool: isbool,
@@ -65,7 +65,7 @@ class Scheme:
             TypeIsodate,
         ]
 
-        self.struct = TypeDict(self.types, self.replacements)
+        self.struct = TypeDict(self.types, self.replacements, pedantic=pedantic)
 
     def check(self, data: dict, *args):
         if len(args) == 0:
