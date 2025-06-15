@@ -74,7 +74,6 @@ class TypeAny(Type):
 
 class TypeNone(Type):
     def conv(self, x) -> dict:
-        print("aaaaaaaaaa", x)
         isNone(x, self.replacements)
         return {}
 
@@ -137,6 +136,9 @@ class TypeUrl(Type):
         state[scheme] = True
         return state
 
+    def merge(self, dest: dict, src: dict):
+        dest.update(src)
+
     def func(self) -> Callable:
         state = self.state
         http = state.get("http", False)
@@ -159,6 +161,7 @@ class TypeIsodate(Type):
     def conv(self, x) -> dict:
         try:
             Isodate(x, self.replacements)
+            print("aaaaaa")
         except DictError:
             raise DictError()
 

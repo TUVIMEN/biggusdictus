@@ -61,7 +61,6 @@ def isbool(w, replacements):
 
 def Is(w, replacements, *args):
     for i in args:
-        print("bbbbbbbbbb", w, i)
         if w is not i:
             continue
         return
