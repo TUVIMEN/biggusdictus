@@ -252,13 +252,13 @@ def Sha512(w, replacements):
     Hash(w, replacements, x=128, y=128)
 
 
-def isiterable(t, w, replacements, checker=None, x=0, y=None):
+def isiterable(t, w, replacements, checker=-1, x=0, y=None):
     Instance(w, replacements, t)
     length(w, replacements, x, y)
 
-    if checker is not None:
+    if checker != -1:
         for i in w:
-            checker(i, replacements)
+            match_expr(i, replacements, checker)
 
 
 def islist(w, replacements, checker=None, x=0, y=None):

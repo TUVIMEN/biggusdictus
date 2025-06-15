@@ -55,6 +55,12 @@ dictexpect(
     False,
     (
         "c",
+        dict,
+        ("b", str),
+        ("c", list),
+    ),
+    (
+        "c",
         (
             dict,
             ("b", str),
@@ -160,10 +166,8 @@ dictexpect(
     ("a", Nonstandardtype),
 )
 
-t3 = {"d": Nonstandardtype()}
+t3 = {"d": Nonstandardtype(), "r": [1, 5, 6, 2]}
 
 dictcheck(
-    t3,
-    False,
-    ("d", Nonstandardtype),
+    t3, False, ("d", Nonstandardtype), ("r", list, (int, 1, 50)), ("r", list, int)
 )
