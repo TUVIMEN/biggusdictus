@@ -21,6 +21,12 @@ from .funcs import (
     dictcheck,
     Instance,
     Or,
+    Http,
+    Https,
+    Uri,
+    Url,
+    Isodate,
+    parseuri,
 )
 
 
@@ -32,7 +38,7 @@ class Type:
         self.state = {}
 
     def conv(self, x) -> dict:
-        return {"type": type(x)}
+        return {}
 
     def add(self, x):
         state = self.conv(x)
@@ -41,17 +47,28 @@ class Type:
         else:
             self.merge(self.state, state)
 
-    def func(self):
-        return Instance
+    def func(self) -> Callable:
+        return lambda: 0
 
     def args(self) -> list:
-        return [self.state["type"]]
+        return []
 
     def merge(self, dest: dict, src: dict):
         pass
 
     def join(self, src: "Type"):
         self.merge(self.state, src.state)
+
+
+class TypeAny(Type):
+    def conv(self, x) -> dict:
+        return {"type": type(x)}
+
+    def func(self) -> Callable:
+        return Instance
+
+    def args(self) -> list:
+        return [self.state["type"]]
 
 
 class TypeNone(Type):
@@ -96,6 +113,49 @@ class TypeNumber(Type):
         dest["float"] = dest["float"] | src["float"]
         dest["min"] = min(dest["min"], src["min"])
         dest["max"] = max(dest["max"], src["max"])
+
+
+class TypeUrl(Type):
+    def conv(self, x) -> dict:
+        state = {}
+
+        try:
+            scheme = parseuri(x, self.replacements, "")
+        except DictError:
+            raise DictError()
+
+        state[scheme] = True
+        return state
+
+    def func(self) -> Callable:
+        state = self.state
+        http = state.get("http", False)
+        https = state.get("https", False)
+
+        size = len(state)
+
+        if size == 1:
+            if http:
+                return Http
+            if https:
+                return Https
+        elif size == 2:
+            if http and https:
+                return Url
+        return Uri
+
+
+class TypeIsodate(Type):
+    def conv(self, x) -> dict:
+        try:
+            Isodate(x, self.replacements)
+        except DictError:
+            raise DictError()
+
+        return {}
+
+    def func(self) -> Callable:
+        return Isodate
 
 
 class Types(Type):
@@ -152,10 +212,10 @@ class Iterable(Type):
 
         return state
 
-    def func(self):
+    def func(self) -> Callable:
         return self.tfunc
 
-    def args(self):
+    def args(self) -> list:
         t = self.state["types"].types()
         if len(t) == 1:
             types = t[0]
@@ -202,10 +262,10 @@ class Text(Type):
         size = len(x)
         return {"min": size, "max": size}
 
-    def func(self):
+    def func(self) -> Callable:
         return self.tfunc
 
-    def args(self):
+    def args(self) -> list:
         return [self.state["min"], self.state["max"]]
 
     def merge(self, dest: dict, src: dict):
@@ -240,10 +300,10 @@ class TypeDict(Type):
 
         return state
 
-    def func(self):
+    def func(self) -> Callable:
         return dictcheck
 
-    def args(self):
+    def args(self) -> list:
         ret = []
         state = self.state
         for i in state.keys():

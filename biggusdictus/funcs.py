@@ -182,14 +182,16 @@ def isbytes(w, replacements, x=0, y=None):
 
 
 def Isodate(w, replacements):
-    isstr(w, replacements)
+    Instance(w, replacements, str | bytes)
     try:
         datetime.fromisoformat(w)
     except Exception:
         raise ConvertError(w, "an iso date format")
 
 
-def parseuri(w, msg, schemes=[]):
+def parseuri(w, replacements, msg, schemes=[]):
+    Instance(w, replacements, str | bytes)
+
     try:
         p = urlparse(w)
     except ValueError:
@@ -198,28 +200,30 @@ def parseuri(w, msg, schemes=[]):
     if not p.scheme or not p.netloc:
         raise ConvertError(w, msg)
 
-    if len(schemes) == 0:
-        return
-
     scheme = p.scheme.lower()
+    if len(schemes) == 0:
+        return scheme
+
     if scheme not in schemes:
         raise ConvertError(w, msg)
 
+    return scheme
+
 
 def Uri(w, replacements):
-    parseuri(w, "an uri")
+    parseuri(w, replacements, "an uri")
 
 
 def Url(w, replacements):
-    parseuri(w, "an url", schemes=["https", "http"])
+    parseuri(w, replacements, "an url", schemes=["https", "http"])
 
 
 def Http(w, replacements):
-    parseuri(w, "an http url", schemes=["http"])
+    parseuri(w, replacements, "an http url", schemes=["http"])
 
 
 def Https(w, replacements):
-    parseuri(w, "an https url", schemes=["https"])
+    parseuri(w, replacements, "an https url", schemes=["https"])
 
 
 def Hash(w, replacements, x=1, y=None):

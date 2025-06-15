@@ -17,7 +17,7 @@ from .funcs import (
     dictcheck,
 )
 from .load import (
-    Type,
+    TypeAny,
     TypeNone,
     TypeBool,
     TypeNumber,
@@ -28,6 +28,8 @@ from .load import (
     TypeDict,
     TypeStr,
     TypeBytes,
+    TypeUrl,
+    TypeIsodate,
 )
 
 
@@ -48,7 +50,7 @@ class Scheme:
         }
 
         self.types = [
-            Type,
+            TypeAny,
             TypeNone,
             TypeBool,
             TypeNumber,
@@ -59,6 +61,8 @@ class Scheme:
             TypeDict,
             TypeStr,
             TypeBytes,
+            TypeUrl,
+            TypeIsodate,
         ]
 
         self.struct = TypeDict(self.types, self.replacements)
