@@ -35,6 +35,20 @@ class Nonstandardtype:
     pass
 
 
+class Nonstandardtype2:
+    def __init__(self, data):
+        self.data = data
+
+
+def isNonstandardtype2(x, min=0):
+    Instance(x, Nonstandardtype2)
+    if len(x.data) < min:
+        raise DictError("something {}".format(min))
+
+
+sche.replacements[Nonstandardtype2] = isNonstandardtype2
+
+
 def loadexpect(data: list, check=None, msg=None, pedantic=False, repre=None):
     sche = Scheme()
 
@@ -204,7 +218,11 @@ def matching_test_2():
 
 
 def matching_test_3():
-    t = {"d": Nonstandardtype(), "r": [1, 5, 6, 2]}
+    t = {
+        "d": Nonstandardtype(),
+        "r": [1, 5, 6, 2],
+        "list": [Nonstandardtype2([1, 2, 3, 4])],
+    }
 
     dictcheck(
         t, False, ("d", Nonstandardtype), ("r", list, (int, 1, 50)), ("r", list, int)
@@ -224,6 +242,15 @@ def matching_test_3():
         False,
         ("r", list, (int, 1), 2),
         ("r", list, (int, 1), -2, 3),
+    )
+
+    dictexpect(
+        ".list: something 5",
+        t,
+        False,
+        ("list", list, Nonstandardtype2),
+        ("list", list, (Nonstandardtype2, 2)),
+        ("list", list, (Nonstandardtype2, 5)),
     )
 
 
