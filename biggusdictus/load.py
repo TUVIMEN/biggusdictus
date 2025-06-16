@@ -18,7 +18,7 @@ from .funcs import (
     isset,
     istuple,
     isfrozenset,
-    dictcheck,
+    isdict,
     Instance,
     Or,
     Http,
@@ -341,7 +341,7 @@ class TypeDict(FieldType):
         return state
 
     def func(self) -> Callable:
-        return dictcheck
+        return isdict
 
     def args(self, pedantic: bool = False) -> list:
         ret = []

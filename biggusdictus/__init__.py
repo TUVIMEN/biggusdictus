@@ -13,7 +13,7 @@ from .funcs import (
     istuple,
     isset,
     isfrozenset,
-    dictcheck,
+    isdict,
     uint,
     i8,
     i16,

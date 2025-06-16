@@ -391,7 +391,7 @@ def pretty_exception(name, e):
     return DictError(msg)
 
 
-def dictcheck(d, replacements, *check):
+def isdict(d, replacements, *check):
     Instance(d, replacements, dict)
 
     strict = True

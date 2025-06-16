@@ -16,7 +16,7 @@ from .funcs import (
     isset,
     istuple,
     isfrozenset,
-    dictcheck,
+    isdict,
 )
 from .load import (
     TypeAny,
@@ -55,7 +55,7 @@ class Scheme:
             set: isset,
             frozenset: isfrozenset,
             tuple: istuple,
-            dict: dictcheck,
+            dict: isdict,
         }
 
         self.types = [
@@ -80,10 +80,10 @@ class Scheme:
         if len(args) == 0:
             if self.struct.state == {}:
                 raise DictError("scheme wasn't specified")
-            assert dictcheck == self.struct.func()
-            dictcheck(data, self.replacements, *self.struct.args(pedantic=pedantic))
+            assert isdict == self.struct.func()
+            isdict(data, self.replacements, *self.struct.args(pedantic=pedantic))
         else:
-            dictcheck(data, self.replacements, *args)
+            isdict(data, self.replacements, *args)
 
     def merge(self, scheme: "Scheme"):
         if self.struct.state == {}:
