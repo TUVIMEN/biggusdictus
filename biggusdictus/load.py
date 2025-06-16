@@ -247,8 +247,15 @@ class Iterable(Type):
 
     def args(self, pedantic: bool = False) -> list:
         types = tuple(expr_simplified(self.state["types"].types(pedantic=pedantic)))
-        if len(types) == 1:
+        size = len(types)
+
+        if size == 1:
             types = types[0]
+        elif size == 0:
+            if not pedantic:
+                return []
+            else:
+                types = None
 
         return [
             types,
