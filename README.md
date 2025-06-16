@@ -58,7 +58,7 @@ data = {
 }
 
 # data can be checked by specifying scheme in arguments
-sche.check(
+sche.dict(
     data,
     ("private", bool),
     ("date", Isodate),
@@ -78,7 +78,7 @@ sche.check(
 ) # if test fails DictError() will be raised
 
 
-sche.check(
+sche.dict(
     data,
     False, # if first argument is scheme is False, scheme won't have to strictly match to all fields
     ("private", bool)
@@ -89,9 +89,9 @@ sche.add(data)
 data['private'] = None
 sche.add(data) # scheme generated should always match to all dictionaries that defined it
 
-sche.check(data) # if no scheme is specified, the scheme defined by dictionaries is used
+sche.dict(data) # if no scheme is specified, the scheme defined by dictionaries is used
 
-sche.check(data, pedantic=True) # use more detailed constraints in defined scheme
+sche.dict(data, pedantic=True) # use more detailed constraints in defined scheme
 
 # return python code representation of defined scheme in string (not formatted)
 print(sche.scheme()) # results are not prettified
@@ -127,11 +127,15 @@ print(sche.scheme(pedantic=True))
 
 `Scheme()` class stores scheme, `replacements` and `types` tables.
 
-### check()
+### dict()
 
-`check(self, data: dict, *args, pedantic: bool = False)` method validates `data` dict. If no `args` are specified then defined scheme will be used, otherwise `args` will be directly passed to `isdict()`.
+`dict(self, data: dict, *args, pedantic: bool = False)` method validates `data` dict. If no `args` are specified then defined scheme will be used, otherwise `args` will be directly passed to `isdict()`.
 
 If `pedantic` is set, scheme constrains become more detailed.
+
+### list() tuple() set() frozenset()
+
+All of them have the same arguments as `islist()`, `istuple()`, `isset()`, `isfrozenset()` counterparts. By calling them from class, replacements are preserved.
 
 ### add()
 
@@ -179,7 +183,7 @@ data = {
     "data": mytype([1,2,3,4])
 }
 
-sche.check(
+sche.dict(
     data,
     ("name", str),
     ("data", mytype, 2), # is now equivalent to ("data", ismytype, 2)
@@ -202,7 +206,7 @@ sche.types.append(myFieldType)
 
 ### scheme()
 
-`scheme(self, pedantic: bool = False) -> str` Is a method that returns a string that represents python code of scheme in class. `pedantic` param works the same way as for `check()`
+`scheme(self, pedantic: bool = False) -> str` Is a method that returns a string that represents python code of scheme in class. `pedantic` param works the same way as for `dict()`
 
 ## Matching functions
 
@@ -219,7 +223,7 @@ def iseven(x, min=0):
     assert x >= min
     assert x%2 == 0
 
-sche.check(data,("name",iseven,20))
+sche.dict(data,("name",iseven,20))
 ```
 
 ### Default functions

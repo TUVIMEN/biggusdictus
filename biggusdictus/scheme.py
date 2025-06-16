@@ -66,7 +66,22 @@ class Scheme:
 
         self.struct = TypeDict(self.types)
 
-    def check(self, data: dict, *args, pedantic: bool = False):
+        self.list = self._list
+        self.tuple = self._tuple
+
+    def _list(self, data: list, checker=-1, x=0, y=None):
+        islist(data, checker, x, y)
+
+    def set(self, data: set, checker=-1, x=0, y=None):
+        isset(data, checker, x, y)
+
+    def frozenset(self, data: frozenset, checker=-1, x=0, y=None):
+        isfrozenset(data, checker, x, y)
+
+    def _tuple(self, data: tuple, checker=-1, x=0, y=None):
+        istuple(data, checker, x, y)
+
+    def dict(self, data: dict, *args, pedantic: bool = False):
         if len(args) == 0:
             if self.struct.state == {}:
                 raise DictError("scheme wasn't specified")

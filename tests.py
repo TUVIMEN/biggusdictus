@@ -20,7 +20,7 @@ sche = Scheme()
 
 
 def dictcheck(*args, pedantic=False):
-    sche.check(*args, pedantic=pedantic)
+    sche.dict(*args, pedantic=pedantic)
 
 
 def dictexpect(msg, *args, pedantic=False):
@@ -48,9 +48,9 @@ def loadexpect(data: list, check=None, msg=None, pedantic=False, repre=None):
         return
 
     if msg is None:
-        sche.check(check, pedantic=pedantic)
+        sche.dict(check, pedantic=pedantic)
     else:
-        args = expect(lambda: sche.check(check, pedantic=pedantic), DictError)
+        args = expect(lambda: sche.dict(check, pedantic=pedantic), DictError)
         if isinstance(msg, Callable):
             assert msg(args[0])
         else:
@@ -227,10 +227,18 @@ def matching_test_3():
     )
 
 
+def matching_test_4():
+    sche.list(["s", "c", 12], (Or, str, int), 2)
+    sche.set({"s", "c", 12}, (Or, str, int), 2)
+    sche.frozenset(frozenset(["s", "c", 12]), (Or, str, int), 2)
+    sche.tuple(("s", "c", 12), (Or, str, int), 2)
+
+
 def matching_tests():
     matching_test_1()
     matching_test_2()
     matching_test_3()
+    matching_test_4()
 
 
 def loading_test_1():
