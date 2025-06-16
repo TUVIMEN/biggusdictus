@@ -318,13 +318,12 @@ def match_expr(value, replacements, expr: Callable | type):
 
 
 def Not(w, replacements, *args):
-    for i in args:
-        try:
-            match_expr(w, replacements, i)
-        except DictError:
-            pass
-        else:
-            raise NotError(w, args)
+    try:
+        match_expr(w, replacements, args)
+    except DictError:
+        pass
+    else:
+        raise NotError(w, args)
 
 
 def Or(w, replacements, *args):

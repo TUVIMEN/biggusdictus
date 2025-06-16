@@ -71,7 +71,14 @@ def matching_test_1():
 
     dictexpect(".c: length of 0 is not in range of 1 to -", t, False, ("c", str, 1))
 
-    dictcheck(t, False, ("b", Eq, "na"), ("h", Is, True), ("h", Not, (Is, False)))
+    dictcheck(
+        t,
+        False,
+        ("b", Eq, "na"),
+        ("h", Is, True),
+        ("h", Not, (Is, False)),
+        ("h", Not, Is, False),
+    )
 
 
 def matching_test_2():
