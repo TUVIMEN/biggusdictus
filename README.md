@@ -133,9 +133,9 @@ print(sche.scheme(pedantic=True))
 
 If `pedantic` is set, scheme constrains become more detailed.
 
-### list() tuple() set() frozenset()
+### list() tuple() set() frozenset() Not() Or() And()
 
-All of them have the same arguments as `islist()`, `istuple()`, `isset()`, `isfrozenset()` counterparts. By calling them from class, replacements are preserved.
+All of them have the same arguments as `islist()`, `istuple()`, `isset()`, `isfrozenset()` `Not()`, `Or()`, `And()` counterparts. By calling them as class method replacements are preserved (normal functions inside expressions preserve replacements by being called from these methods).
 
 ### add()
 

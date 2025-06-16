@@ -18,6 +18,9 @@ from .funcs import (
     istuple,
     isfrozenset,
     isdict,
+    Not,
+    Or,
+    And,
     replacements,
 )
 from .load import (
@@ -68,18 +71,29 @@ class Scheme:
 
         self.list = self._list
         self.tuple = self._tuple
+        self.set = self._set
+        self.frozenset = self._frozenset
 
     def _list(self, data: list, checker=-1, x=0, y=None):
         islist(data, checker, x, y)
 
-    def set(self, data: set, checker=-1, x=0, y=None):
+    def _set(self, data: set, checker=-1, x=0, y=None):
         isset(data, checker, x, y)
 
-    def frozenset(self, data: frozenset, checker=-1, x=0, y=None):
+    def _frozenset(self, data: frozenset, checker=-1, x=0, y=None):
         isfrozenset(data, checker, x, y)
 
     def _tuple(self, data: tuple, checker=-1, x=0, y=None):
         istuple(data, checker, x, y)
+
+    def Not(self, data, *args):
+        Not(data, *args, __replacements=self.replacements)
+
+    def Or(self, data, *args):
+        Or(data, *args, __replacements=self.replacements)
+
+    def And(self, data, *args):
+        And(data, *args, __replacements=self.replacements)
 
     def dict(self, data: dict, *args, pedantic: bool = False):
         if len(args) == 0:
