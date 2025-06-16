@@ -31,10 +31,9 @@ from .funcs import (
 
 
 class Type:
-    def __init__(self, typelist, replacements, pedantic=False):
+    def __init__(self, typelist, replacements):
         self.typelist = typelist
         self.replacements = replacements
-        self.pedantic = pedantic
 
         self.state = {}
 
@@ -51,7 +50,7 @@ class Type:
     def func(self) -> Callable:
         return lambda: 0
 
-    def args(self) -> list:
+    def args(self, pedantic: bool = False) -> list:
         return []
 
     def merge(self, dest: dict, src: dict):
@@ -68,7 +67,7 @@ class TypeAny(Type):
     def func(self) -> Callable:
         return Instance
 
-    def args(self) -> list:
+    def args(self, pedantic: bool = False) -> list:
         return [self.state["type"]]
 
 
@@ -113,8 +112,8 @@ class TypeNumber(Type):
             return uint
         return isint
 
-    def args(self) -> list:
-        if self.pedantic:
+    def args(self, pedantic: bool = False) -> list:
+        if pedantic:
             return [self.state["min"], self.state["max"]]
         return []
 
@@ -194,9 +193,7 @@ class Types(Type):
         types = {}
 
         for i in reversed(self.typelist):
-            t = types.get(
-                i, i(self.typelist, self.replacements, pedantic=self.pedantic)
-            )
+            t = types.get(i, i(self.typelist, self.replacements))
 
             try:
                 t.add(x)
@@ -208,13 +205,13 @@ class Types(Type):
 
         assert 0
 
-    def types(self) -> list:
+    def types(self, pedantic=False) -> list:
         ret = []
         state = self.state
 
         for i in state.keys():
             val = state[i]
-            ret.append((val.func(), *val.args()))
+            ret.append((val.func(), *val.args(pedantic=pedantic)))
         return ret
 
     def merge(self, dest: dict, src: dict):
@@ -229,15 +226,15 @@ class Types(Type):
 
 
 class Iterable(Type):
-    def __init__(self, tfunc, typelist, replacements, pedantic=False):
+    def __init__(self, tfunc, typelist, replacements):
         self.tfunc = tfunc
-        super().__init__(typelist, replacements, pedantic=pedantic)
+        super().__init__(typelist, replacements)
 
     def conv(self, x) -> dict:
         self.tfunc(x, self.replacements)
 
         size = len(x)
-        types = Types(self.typelist, self.replacements, pedantic=self.pedantic)
+        types = Types(self.typelist, self.replacements)
         state = {"min": size, "max": size, "types": types}
 
         for i in x:
@@ -248,14 +245,14 @@ class Iterable(Type):
     def func(self) -> Callable:
         return self.tfunc
 
-    def args(self) -> list:
-        types = tuple(expr_simplified(self.state["types"].types()))
+    def args(self, pedantic: bool = False) -> list:
+        types = tuple(expr_simplified(self.state["types"].types(pedantic=pedantic)))
         if len(types) == 1:
             types = types[0]
 
         return [
             types,
-            *([self.state["min"], self.state["max"]] if self.pedantic else []),
+            *([self.state["min"], self.state["max"]] if pedantic else []),
         ]
 
     def merge(self, dest: dict, src: dict):
@@ -266,29 +263,29 @@ class Iterable(Type):
 
 
 class TypeList(Iterable):
-    def __init__(self, typelist, replacements, pedantic=False):
-        super().__init__(islist, typelist, replacements, pedantic=pedantic)
+    def __init__(self, typelist, replacements):
+        super().__init__(islist, typelist, replacements)
 
 
 class TypeTuple(Iterable):
-    def __init__(self, typelist, replacements, pedantic=False):
-        super().__init__(istuple, typelist, replacements, pedantic=pedantic)
+    def __init__(self, typelist, replacements):
+        super().__init__(istuple, typelist, replacements)
 
 
 class TypeSet(Iterable):
-    def __init__(self, typelist, replacements, pedantic=False):
-        super().__init__(isset, typelist, replacements, pedantic=pedantic)
+    def __init__(self, typelist, replacements):
+        super().__init__(isset, typelist, replacements)
 
 
 class TypeFrozenset(Iterable):
-    def __init__(self, typelist, replacements, pedantic=False):
-        super().__init__(isfrozenset, typelist, replacements, pedantic=pedantic)
+    def __init__(self, typelist, replacements):
+        super().__init__(isfrozenset, typelist, replacements)
 
 
 class Text(Type):
-    def __init__(self, tfunc, typelist, replacements, pedantic=False):
+    def __init__(self, tfunc, typelist, replacements):
         self.tfunc = tfunc
-        super().__init__(typelist, replacements, pedantic=pedantic)
+        super().__init__(typelist, replacements)
 
     def conv(self, x) -> dict:
         self.tfunc(x, self.replacements)
@@ -299,8 +296,8 @@ class Text(Type):
     def func(self) -> Callable:
         return self.tfunc
 
-    def args(self) -> list:
-        if self.pedantic:
+    def args(self, pedantic: bool = False) -> list:
+        if pedantic:
             return [self.state["min"], self.state["max"]]
         return []
 
@@ -310,13 +307,13 @@ class Text(Type):
 
 
 class TypeStr(Text):
-    def __init__(self, typelist, replacements, pedantic=False):
-        super().__init__(isstr, typelist, replacements, pedantic=pedantic)
+    def __init__(self, typelist, replacements):
+        super().__init__(isstr, typelist, replacements)
 
 
 class TypeBytes(Text):
-    def __init__(self, typelist, replacements, pedantic=False):
-        super().__init__(isbytes, typelist, replacements, pedantic=pedantic)
+    def __init__(self, typelist, replacements):
+        super().__init__(isbytes, typelist, replacements)
 
 
 class TypeDict(Type):
@@ -326,7 +323,7 @@ class TypeDict(Type):
 
         for i in x.keys():
             val = x[i]
-            types = Types(self.typelist, self.replacements, pedantic=self.pedantic)
+            types = Types(self.typelist, self.replacements)
             types.add(val)
 
             state[i] = {
@@ -339,12 +336,12 @@ class TypeDict(Type):
     def func(self) -> Callable:
         return dictcheck
 
-    def args(self) -> list:
+    def args(self, pedantic: bool = False) -> list:
         ret = []
         state = self.state
         for i in state.keys():
             val = state[i]
-            types = expr_simplified(val["types"].types())
+            types = expr_simplified(val["types"].types(pedantic=pedantic))
 
             if len(types) == 1 and isinstance(types[0], tuple | list):
                 types = types[0]

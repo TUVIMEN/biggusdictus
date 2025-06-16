@@ -19,12 +19,12 @@ def expect(func, exceptions):
 sche = Scheme()
 
 
-def dictcheck(*args):
-    sche.check(*args)
+def dictcheck(*args, pedantic=False):
+    sche.check(*args, pedantic=pedantic)
 
 
-def dictexpect(msg, *args):
-    args = expect(lambda: dictcheck(*args), DictError)
+def dictexpect(msg, *args, pedantic=False):
+    args = expect(lambda: dictcheck(*args, pedantic=pedantic), DictError)
     if isinstance(msg, Callable):
         assert msg(args[0])
     else:
@@ -36,21 +36,21 @@ class Nonstandardtype:
 
 
 def loadexpect(data: list, check=None, msg=None, pedantic=False, repre=None):
-    sche = Scheme(pedantic=pedantic)
+    sche = Scheme()
 
     for i in data:
         sche.add(i)
 
     if repre is not None:
-        assert sche.scheme == repre
+        assert sche.scheme(pedantic=pedantic) == repre
 
     if check is None:
         return
 
     if msg is None:
-        sche.check(check)
+        sche.check(check, pedantic=pedantic)
     else:
-        args = expect(lambda: sche.check(check), DictError)
+        args = expect(lambda: sche.check(check, pedantic=pedantic), DictError)
         if isinstance(msg, Callable):
             assert msg(args[0])
         else:

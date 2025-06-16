@@ -43,7 +43,7 @@ def dict_by_item(data, item, default=None):
 
 
 class Scheme:
-    def __init__(self, pedantic=False):
+    def __init__(self):
         self.replacements = {
             None: isNone,
             bool: isbool,
@@ -74,14 +74,14 @@ class Scheme:
             TypeIsodate,
         ]
 
-        self.struct = TypeDict(self.types, self.replacements, pedantic=pedantic)
+        self.struct = TypeDict(self.types, self.replacements)
 
-    def check(self, data: dict, *args):
+    def check(self, data: dict, *args, pedantic: bool = False):
         if len(args) == 0:
             if self.struct.state == {}:
                 raise DictError("scheme wasn't specified")
             assert dictcheck == self.struct.func()
-            dictcheck(data, self.replacements, *self.struct.args())
+            dictcheck(data, self.replacements, *self.struct.args(pedantic=pedantic))
         else:
             dictcheck(data, self.replacements, *args)
 
@@ -92,7 +92,7 @@ class Scheme:
 
         self.struct.join(scheme.struct)
 
-    def schemeprint(self, itern: tuple | list) -> str:
+    def _schemeprint(self, itern: tuple | list) -> str:
         tupl = isinstance(itern, tuple)
         ret = "(" if tupl else "["
 
@@ -104,7 +104,7 @@ class Scheme:
             g += 1
 
             if isinstance(i, tuple | list):
-                ret += self.schemeprint(i)
+                ret += self._schemeprint(i)
             elif i == isNone:
                 ret += "None"
             elif isinstance(i, type) or isinstance(i, Callable):
@@ -118,9 +118,8 @@ class Scheme:
         ret += ")" if tupl else "]"
         return ret
 
-    @property
-    def scheme(self) -> str:
-        return self.schemeprint(self.struct.args())[1:-1]
+    def scheme(self, pedantic: bool = False) -> str:
+        return self._schemeprint(self.struct.args(pedantic=pedantic))[1:-1]
 
     def add(self, data: dict):
         self.struct.add(data)
