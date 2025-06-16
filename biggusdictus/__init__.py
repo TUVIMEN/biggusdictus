@@ -14,6 +14,7 @@ from .funcs import (
     isset,
     isfrozenset,
     dictcheck,
+    uint,
     i8,
     i16,
     i32,
