@@ -42,4 +42,6 @@ from .funcs import (
     DictError,
 )
 
+from .load import FieldType
+
 from .scheme import Scheme

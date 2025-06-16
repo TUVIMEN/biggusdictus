@@ -30,7 +30,7 @@ from .funcs import (
 )
 
 
-class Type:
+class FieldType:
     def __init__(self, typelist, replacements):
         self.typelist = typelist
         self.replacements = replacements
@@ -56,11 +56,11 @@ class Type:
     def merge(self, dest: dict, src: dict):
         pass
 
-    def join(self, src: "Type"):
+    def join(self, src: "FieldType"):
         self.merge(self.state, src.state)
 
 
-class TypeAny(Type):
+class TypeAny(FieldType):
     def conv(self, x) -> dict:
         return {"type": type(x)}
 
@@ -71,7 +71,7 @@ class TypeAny(Type):
         return [self.state["type"]]
 
 
-class TypeNone(Type):
+class TypeNone(FieldType):
     def conv(self, x) -> dict:
         isNone(x, self.replacements)
         return {}
@@ -80,7 +80,7 @@ class TypeNone(Type):
         return isNone
 
 
-class TypeBool(Type):
+class TypeBool(FieldType):
     def conv(self, x) -> dict:
         isbool(x, self.replacements)
         return {}
@@ -89,7 +89,7 @@ class TypeBool(Type):
         return isbool
 
 
-class TypeNumber(Type):
+class TypeNumber(FieldType):
     def conv(self, x) -> dict:
         state = {"min": x, "max": x, "float": False}
 
@@ -123,7 +123,7 @@ class TypeNumber(Type):
         dest["max"] = max(dest["max"], src["max"])
 
 
-class TypeUrl(Type):
+class TypeUrl(FieldType):
     def conv(self, x) -> dict:
         state = {}
 
@@ -156,7 +156,7 @@ class TypeUrl(Type):
         return Uri
 
 
-class TypeIsodate(Type):
+class TypeIsodate(FieldType):
     def conv(self, x) -> dict:
         try:
             Isodate(x, self.replacements)
@@ -188,7 +188,7 @@ def expr_simplified(t) -> list:
     return types
 
 
-class Types(Type):
+class Types(FieldType):
     def conv(self, x) -> dict:
         types = {}
 
@@ -225,7 +225,7 @@ class Types(Type):
             dest[i].join(src[i])
 
 
-class Iterable(Type):
+class Iterable(FieldType):
     def __init__(self, tfunc, typelist, replacements):
         self.tfunc = tfunc
         super().__init__(typelist, replacements)
@@ -289,7 +289,7 @@ class TypeFrozenset(Iterable):
         super().__init__(isfrozenset, typelist, replacements)
 
 
-class Text(Type):
+class Text(FieldType):
     def __init__(self, tfunc, typelist, replacements):
         self.tfunc = tfunc
         super().__init__(typelist, replacements)
@@ -323,7 +323,7 @@ class TypeBytes(Text):
         super().__init__(isbytes, typelist, replacements)
 
 
-class TypeDict(Type):
+class TypeDict(FieldType):
     def conv(self, x) -> dict:
         Instance(x, self.replacements, dict)
         state = {}
