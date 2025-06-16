@@ -120,7 +120,7 @@ class Scheme:
 
     @property
     def scheme(self) -> str:
-        return self.schemeprint(self.struct.args())
+        return self.schemeprint(self.struct.args())[1:-1]
 
     def add(self, data: dict):
         self.struct.add(data)

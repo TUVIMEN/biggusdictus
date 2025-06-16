@@ -22,6 +22,14 @@ class DictError(Exception):
     pass
 
 
+class FieldError(DictError):
+    pass
+
+
+class OrError(DictError):
+    pass
+
+
 class EqError(DictError):
     pass
 
@@ -168,7 +176,7 @@ def length(w, replacements, x, y):
     try:
         uint(len(w), replacements, x, y)
     except RangeError as e:
-        raise LengthError(*e.args)
+        raise LengthError(*e.args) from None
 
 
 def isstr(w, replacements, x=0, y=None):
@@ -186,7 +194,7 @@ def Isodate(w, replacements):
     try:
         datetime.fromisoformat(w)
     except Exception:
-        raise ConvertError(w, "an iso date format")
+        raise ConvertError(w, "an iso date format") from None
 
 
 def parseuri(w, replacements, msg, schemes=[]):
@@ -195,7 +203,7 @@ def parseuri(w, replacements, msg, schemes=[]):
     try:
         p = urlparse(w)
     except ValueError:
-        raise ConvertError(w, msg)
+        raise ConvertError(w, msg) from None
 
     if not p.scheme or not p.netloc:
         raise ConvertError(w, msg)
@@ -320,17 +328,15 @@ def Not(w, replacements, *args):
 
 
 def Or(w, replacements, *args):
-    last = None
     for i in args:
         try:
             match_expr(w, replacements, i)
-        except DictError as e:
-            last = e
+        except DictError:
+            pass
         else:
             return
 
-    if last is not None:
-        raise last
+    raise OrError(w, args)
 
 
 def And(w, replacements, *args):
@@ -343,7 +349,9 @@ def pretty_exception(name, e):
 
     t = type(e)
     if t == DictError:
-        return DictError("." + name + e.args[0])
+        return DictError(
+            "." + name + ("" if e.args[0][:1] == "." else ": ") + e.args[0]
+        )
 
     msg = "." + name + ": "
     args = e.args
@@ -352,6 +360,8 @@ def pretty_exception(name, e):
         msg += repr(args[0]) + " is not equal to any of " + repr(args[1])
     elif t == IsError:
         msg += repr(args[0]) + " is not in " + repr(args[1])
+    elif t == OrError:
+        msg += repr(args[0]) + " did not match to any of " + repr(args[1])
     elif t == NotError:
         msg += repr(args[0]) + " matched " + repr(args[1])
     elif t == InstanceError:
@@ -366,8 +376,9 @@ def pretty_exception(name, e):
         )
     elif t == LengthError:
         msg += (
-            repr(args[0])
-            + " length is not in range of "
+            "length of "
+            + repr(args[0])
+            + " is not in range of "
             + ("-" if args[1] is None else str(args[1]))
             + " to "
             + ("-" if args[2] is None else str(args[2]))
@@ -402,17 +413,17 @@ def dictcheck(d, replacements, *check):
 
         try:
             value = d[name]
-        except KeyError as e:
+        except KeyError:
             if optional:
                 continue
-            raise e
+            raise DictError("." + name + ": field was not found") from None
 
         keys[name] = 1
 
         try:
             match_expr(value, replacements, expr)
         except DictError as e:
-            raise pretty_exception(name, e)
+            raise pretty_exception(name, e) from None
 
     if strict:
         unused = []

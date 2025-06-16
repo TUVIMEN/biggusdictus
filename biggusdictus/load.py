@@ -161,7 +161,6 @@ class TypeIsodate(Type):
     def conv(self, x) -> dict:
         try:
             Isodate(x, self.replacements)
-            print("aaaaaa")
         except DictError:
             raise DictError()
 
