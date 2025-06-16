@@ -3,6 +3,7 @@
 # License: GNU GPLv3
 
 from typing import Callable
+import copy
 
 from .funcs import (
     DictError,
@@ -17,6 +18,7 @@ from .funcs import (
     istuple,
     isfrozenset,
     isdict,
+    replacements,
 )
 from .load import (
     TypeAny,
@@ -44,19 +46,7 @@ def dict_by_item(data, item, default=None):
 
 class Scheme:
     def __init__(self):
-        self.replacements = {
-            None: isNone,
-            bool: isbool,
-            str: isstr,
-            bytes: isbytes,
-            int: isint,
-            float: isfloat,
-            list: islist,
-            set: isset,
-            frozenset: isfrozenset,
-            tuple: istuple,
-            dict: isdict,
-        }
+        self.replacements = copy.copy(replacements)
 
         self.types = [
             TypeAny,
@@ -74,16 +64,20 @@ class Scheme:
             TypeIsodate,
         ]
 
-        self.struct = TypeDict(self.types, self.replacements)
+        self.struct = TypeDict(self.types)
 
     def check(self, data: dict, *args, pedantic: bool = False):
         if len(args) == 0:
             if self.struct.state == {}:
                 raise DictError("scheme wasn't specified")
             assert isdict == self.struct.func()
-            isdict(data, self.replacements, *self.struct.args(pedantic=pedantic))
+            isdict(
+                data,
+                *self.struct.args(pedantic=pedantic),
+                __replacements=self.replacements,
+            )
         else:
-            isdict(data, self.replacements, *args)
+            isdict(data, *args, __replacements=self.replacements)
 
     def merge(self, scheme: "Scheme"):
         if self.struct.state == {}:

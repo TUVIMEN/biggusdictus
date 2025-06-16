@@ -31,9 +31,8 @@ from .funcs import (
 
 
 class FieldType:
-    def __init__(self, typelist, replacements):
+    def __init__(self, typelist):
         self.typelist = typelist
-        self.replacements = replacements
 
         self.state = {}
 
@@ -73,7 +72,7 @@ class TypeAny(FieldType):
 
 class TypeNone(FieldType):
     def conv(self, x) -> dict:
-        isNone(x, self.replacements)
+        isNone(x)
         return {}
 
     def func(self) -> Callable:
@@ -82,7 +81,7 @@ class TypeNone(FieldType):
 
 class TypeBool(FieldType):
     def conv(self, x) -> dict:
-        isbool(x, self.replacements)
+        isbool(x)
         return {}
 
     def func(self) -> Callable:
@@ -94,13 +93,13 @@ class TypeNumber(FieldType):
         state = {"min": x, "max": x, "float": False}
 
         try:
-            isint(x, self.replacements)
+            isint(x)
         except DictError:
             pass
         else:
             return state
 
-        isfloat(x, self.replacements)
+        isfloat(x)
         state["float"] = True
 
         return state
@@ -128,7 +127,7 @@ class TypeUrl(FieldType):
         state = {}
 
         try:
-            scheme = parseuri(x, self.replacements, "")
+            scheme = parseuri(x, "")
         except DictError:
             raise DictError()
 
@@ -159,7 +158,7 @@ class TypeUrl(FieldType):
 class TypeIsodate(FieldType):
     def conv(self, x) -> dict:
         try:
-            Isodate(x, self.replacements)
+            Isodate(x)
         except DictError:
             raise DictError()
 
@@ -193,7 +192,7 @@ class Types(FieldType):
         types = {}
 
         for i in reversed(self.typelist):
-            t = types.get(i, i(self.typelist, self.replacements))
+            t = types.get(i, i(self.typelist))
 
             try:
                 t.add(x)
@@ -226,15 +225,15 @@ class Types(FieldType):
 
 
 class Iterable(FieldType):
-    def __init__(self, tfunc, typelist, replacements):
+    def __init__(self, tfunc, typelist):
         self.tfunc = tfunc
-        super().__init__(typelist, replacements)
+        super().__init__(typelist)
 
     def conv(self, x) -> dict:
-        self.tfunc(x, self.replacements)
+        self.tfunc(x)
 
         size = len(x)
-        types = Types(self.typelist, self.replacements)
+        types = Types(self.typelist)
         state = {"min": size, "max": size, "types": types}
 
         for i in x:
@@ -270,32 +269,32 @@ class Iterable(FieldType):
 
 
 class TypeList(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(islist, typelist, replacements)
+    def __init__(self, typelist):
+        super().__init__(islist, typelist)
 
 
 class TypeTuple(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(istuple, typelist, replacements)
+    def __init__(self, typelist):
+        super().__init__(istuple, typelist)
 
 
 class TypeSet(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(isset, typelist, replacements)
+    def __init__(self, typelist):
+        super().__init__(isset, typelist)
 
 
 class TypeFrozenset(Iterable):
-    def __init__(self, typelist, replacements):
-        super().__init__(isfrozenset, typelist, replacements)
+    def __init__(self, typelist):
+        super().__init__(isfrozenset, typelist)
 
 
 class Text(FieldType):
-    def __init__(self, tfunc, typelist, replacements):
+    def __init__(self, tfunc, typelist):
         self.tfunc = tfunc
-        super().__init__(typelist, replacements)
+        super().__init__(typelist)
 
     def conv(self, x) -> dict:
-        self.tfunc(x, self.replacements)
+        self.tfunc(x)
 
         size = len(x)
         return {"min": size, "max": size}
@@ -314,23 +313,23 @@ class Text(FieldType):
 
 
 class TypeStr(Text):
-    def __init__(self, typelist, replacements):
-        super().__init__(isstr, typelist, replacements)
+    def __init__(self, typelist):
+        super().__init__(isstr, typelist)
 
 
 class TypeBytes(Text):
-    def __init__(self, typelist, replacements):
-        super().__init__(isbytes, typelist, replacements)
+    def __init__(self, typelist):
+        super().__init__(isbytes, typelist)
 
 
 class TypeDict(FieldType):
     def conv(self, x) -> dict:
-        Instance(x, self.replacements, dict)
+        Instance(x, dict)
         state = {}
 
         for i in x.keys():
             val = x[i]
-            types = Types(self.typelist, self.replacements)
+            types = Types(self.typelist)
             types.add(val)
 
             state[i] = {

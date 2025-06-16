@@ -166,8 +166,8 @@ class mytype:
     def __init__(self, data):
         self.data = data
 
-def ismytype(x, replacements, min=0):
-    Instance(x, replacements, mytype)
+def ismytype(x, min=0):
+    Instance(x, mytype)
     if min > 0:
         assert len(x.data) >= min
 
@@ -206,23 +206,21 @@ sche.types.append(myFieldType)
 
 ## Matching functions
 
-They have to take at least 2 argument, the value matched and replacement dictionary. Other arguments will be appended only if specified in scheme. Failure is indicated by raising exceptions, preferably `DictError()`.
+They have to take at least 1 argument. Other arguments will be appended only if specified in scheme. Failure is indicated by raising exceptions, preferably `DictError()`.
 
 ```python
 from biggusdictus import *
 sche = Scheme()
 data = {"name":824}
 
-def iseven(x, replacements, min=0):
-    Instance(x, replacements, int)
+def iseven(x, min=0):
+    Instance(x, int)
 
     assert x >= min
     assert x%2 == 0
 
 sche.check(data,("name",iseven,20))
 ```
-
-`replacements` argument cannot by abstracted away in any way without sacrificing namespace of functions.
 
 ### Default functions
 

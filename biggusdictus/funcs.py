@@ -5,6 +5,7 @@
 from datetime import datetime
 from typing import Callable
 from urllib.parse import urlparse
+import inspect
 
 limits = {
     "i8": (-128, 127),
@@ -16,6 +17,8 @@ limits = {
     "u32": 4294967295,
     "u64": 18446744073709551615,
 }
+
+replacements = {}
 
 
 class DictError(Exception):
@@ -58,16 +61,21 @@ class LengthError(RangeError):
     pass
 
 
-def Instance(value, replacements, t):
+def Instance(value, t):
     if not isinstance(value, t):
         raise InstanceError(value, t)
 
 
-def isbool(w, replacements):
-    Instance(w, replacements, bool)
+def isbool(w):
+    Instance(w, bool)
 
 
-def Is(w, replacements, *args):
+def checkstop(stop):
+    if stop is not ...:
+        raise TypeError("Too many arguments to matching function")
+
+
+def Is(w, *args):
     for i in args:
         if w is not i:
             continue
@@ -75,7 +83,7 @@ def Is(w, replacements, *args):
     raise IsError(w, args)
 
 
-def Eq(w, replacements, *args):
+def Eq(w, *args):
     for i in args:
         if w != i:
             continue
@@ -83,8 +91,8 @@ def Eq(w, replacements, *args):
     raise EqError(w, args)
 
 
-def isNone(w, replacements):
-    Is(w, replacements, None)
+def isNone(w):
+    Is(w, None)
 
 
 def inrange(w, x, y):
@@ -96,19 +104,19 @@ def inrange(w, x, y):
             raise RangeError(w, x, y)
 
 
-def isfloat(w, replacements, x=None, y=None):
-    Instance(w, replacements, int | float)
+def isfloat(w, x=None, y=None):
+    Instance(w, int | float)
     inrange(w, x, y)
 
 
-def isint(w, replacements, x=None, y=None):
+def isint(w, x=None, y=None):
     if isinstance(w, bool):
         raise InstanceError(w, int)
-    Instance(w, replacements, int)
+    Instance(w, int)
     inrange(w, x, y)
 
 
-def int_lim(w, replacements, x, y, limx=None, limy=None):
+def int_lim(w, x, y, limx=None, limy=None):
     if x is None or (limx is not None and x < limx):
         x = limx
     if y is None or (limy is not None and y > limy):
@@ -116,89 +124,88 @@ def int_lim(w, replacements, x, y, limx=None, limy=None):
 
     isint(
         w,
-        replacements,
         x,
         y,
     )
 
 
-def uint_lim(w, replacements, x, y, limy=None):
-    int_lim(w, replacements, x, y, limx=0, limy=limy)
+def uint_lim(w, x, y, limy=None):
+    int_lim(w, x, y, limx=0, limy=limy)
 
 
-def uint(w, replacements, x=None, y=None):
-    uint_lim(w, replacements, x, y)
+def uint(w, x=None, y=None):
+    uint_lim(w, x, y)
 
 
-def isuint_lim(w, replacements, x, y, lim):
+def isuint_lim(w, x, y, lim):
     lim = limits[lim]
-    int_lim(w, replacements, x, y, limy=lim[0])
+    int_lim(w, x, y, limy=lim[0])
 
 
-def isint_lim(w, replacements, x, y, lim):
+def isint_lim(w, x, y, lim):
     lim = limits[lim]
-    int_lim(w, replacements, x, y, limx=lim[0], limy=lim[1])
+    int_lim(w, x, y, limx=lim[0], limy=lim[1])
 
 
-def i8(w, replacements, x=0, y=None):
-    isint_lim(w, replacements, x, y, "i8")
+def i8(w, x=0, y=None):
+    isint_lim(w, x, y, "i8")
 
 
-def i16(w, replacements, x=0, y=None):
-    isint_lim(w, replacements, x, y, "i16")
+def i16(w, x=0, y=None):
+    isint_lim(w, x, y, "i16")
 
 
-def i32(w, replacements, x=0, y=None):
-    isint_lim(w, replacements, x, y, "i32")
+def i32(w, x=0, y=None):
+    isint_lim(w, x, y, "i32")
 
 
-def i64(w, replacements, x=0, y=None):
-    isint_lim(w, replacements, x, y, "i64")
+def i64(w, x=0, y=None):
+    isint_lim(w, x, y, "i64")
 
 
-def u8(w, replacements, x=0, y=None):
-    isuint_lim(w, replacements, x, y, "u8")
+def u8(w, x=0, y=None):
+    isuint_lim(w, x, y, "u8")
 
 
-def u16(w, replacements, x=0, y=None):
-    isuint_lim(w, replacements, x, y, "u16")
+def u16(w, x=0, y=None):
+    isuint_lim(w, x, y, "u16")
 
 
-def u32(w, replacements, x=0, y=None):
-    isuint_lim(w, replacements, x, y, "u32")
+def u32(w, x=0, y=None):
+    isuint_lim(w, x, y, "u32")
 
 
-def u64(w, replacements, x=0, y=None):
-    isuint_lim(w, replacements, x, y, "u64")
+def u64(w, x=0, y=None):
+    isuint_lim(w, x, y, "u64")
 
 
-def length(w, replacements, x, y):
+def length(w, x, y):
     try:
-        uint(len(w), replacements, x, y)
+        uint(len(w), x, y)
     except RangeError as e:
         raise LengthError(*e.args) from None
 
 
-def isstr(w, replacements, x=0, y=None):
-    Instance(w, replacements, str)
-    length(w, replacements, x, y)
+def isstr(w, x=0, y=None):
+    Instance(w, str)
+    length(w, x, y)
 
 
-def isbytes(w, replacements, x=0, y=None):
-    Instance(w, replacements, bytes)
-    length(w, replacements, x, y)
+def isbytes(w, x=0, y=None):
+    Instance(w, bytes)
+    length(w, x, y)
 
 
-def Isodate(w, replacements):
-    Instance(w, replacements, str | bytes)
+def Isodate(w):
+    Instance(w, str | bytes)
     try:
         datetime.fromisoformat(w)
     except Exception:
         raise ConvertError(w, "an iso date format") from None
 
 
-def parseuri(w, replacements, msg, schemes=[]):
-    Instance(w, replacements, str | bytes)
+def parseuri(w, msg, schemes=[]):
+    Instance(w, str | bytes)
 
     try:
         p = urlparse(w)
@@ -218,25 +225,25 @@ def parseuri(w, replacements, msg, schemes=[]):
     return scheme
 
 
-def Uri(w, replacements):
-    parseuri(w, replacements, "an uri")
+def Uri(w):
+    parseuri(w, "an uri")
 
 
-def Url(w, replacements):
-    parseuri(w, replacements, "an url", schemes=["https", "http"])
+def Url(w):
+    parseuri(w, "an url", schemes=["https", "http"])
 
 
-def Http(w, replacements):
-    parseuri(w, replacements, "an http url", schemes=["http"])
+def Http(w):
+    parseuri(w, "an http url", schemes=["http"])
 
 
-def Https(w, replacements):
-    parseuri(w, replacements, "an https url", schemes=["https"])
+def Https(w):
+    parseuri(w, "an https url", schemes=["https"])
 
 
-def Hash(w, replacements, x=1, y=None):
-    Instance(w, replacements, bytes | str)
-    length(w, replacements, x, y)
+def Hash(w, x=1, y=None):
+    Instance(w, bytes | str)
+    length(w, x, y)
 
     for i in w:
         i = i.lower()
@@ -244,57 +251,67 @@ def Hash(w, replacements, x=1, y=None):
             raise ConvertError(w, "a hexadecimal string")
 
 
-def Md5(w, replacements):
-    Hash(w, replacements, x=32, y=32)
+def Md5(w):
+    Hash(w, x=32, y=32)
 
 
-def Sha1(w, replacements):
-    Hash(w, replacements, x=40, y=40)
+def Sha1(w):
+    Hash(w, x=40, y=40)
 
 
-def Sha256(w, replacements):
-    Hash(w, replacements, x=64, y=64)
+def Sha256(w):
+    Hash(w, x=64, y=64)
 
 
-def Sha512(w, replacements):
-    Hash(w, replacements, x=128, y=128)
+def Sha512(w):
+    Hash(w, x=128, y=128)
 
 
-def isiterable(t, w, replacements, checker=-1, x=0, y=None):
-    Instance(w, replacements, t)
-    length(w, replacements, x, y)
+def isiterable(t, w, checker=-1, x=0, y=None, __stop=..., __replacements=replacements):
+    checkstop(__stop)
+    Instance(w, t)
+    length(w, x, y)
 
     if checker != -1:
         for i in w:
-            match_expr(i, replacements, checker)
+            match_expr(i, __replacements, checker)
 
 
-def islist(w, replacements, checker=-1, x=0, y=None):
-    isiterable(list, w, replacements, checker, x, y)
+def islist(w, checker=-1, x=0, y=None, __stop=..., __replacements=replacements):
+    isiterable(list, w, checker, x, y, __stop=__stop, __replacements=__replacements)
 
 
-def istuple(w, replacements, checker=-1, x=0, y=None):
-    isiterable(tuple, w, replacements, checker, x, y)
+def istuple(w, checker=-1, x=0, y=None, __stop=..., __replacements=replacements):
+    isiterable(tuple, w, checker, x, y, __stop=__stop, __replacements=__replacements)
 
 
-def isset(w, replacements, checker=-1, x=0, y=None):
-    isiterable(set, w, replacements, checker, x, y)
+def isset(w, checker=-1, x=0, y=None, __stop=..., __replacements=replacements):
+    isiterable(set, w, checker, x, y, __stop=__stop, __replacements=__replacements)
 
 
-def isfrozenset(w, replacements, checker=-1, x=0, y=None):
-    isiterable(frozenset, w, replacements, checker, x, y)
+def isfrozenset(w, checker=-1, x=0, y=None, __stop=..., __replacements=replacements):
+    isiterable(
+        frozenset, w, checker, x, y, __stop=__stop, __replacements=__replacements
+    )
 
 
 def match_expr(value, replacements, expr: Callable | type):
     def match(func, args):
+        def run(f):
+            a = inspect.getfullargspec(f).args
+            if "__replacements" in a and "__stop" in a:
+                f(value, *args, __replacements=replacements)
+            else:
+                f(value, *args)
+
         if (r := replacements.get(func)) is not None:
-            r(value, replacements, *args)
+            run(r)
         elif isinstance(func, type):
-            Instance(value, replacements, func)
+            Instance(value, func)
         elif not isinstance(func, Callable):
-            Instance(func, replacements, type)
+            Instance(func, type)
         else:
-            func(value, replacements, *args)
+            run(func)
 
     if not isinstance(expr, tuple | list):
         match(expr, [])
@@ -317,16 +334,18 @@ def match_expr(value, replacements, expr: Callable | type):
         match(func, args)
 
 
-def Not(w, replacements, *args):
+def Not(w, *args, __stop=..., __replacements=replacements):
+    checkstop(__stop)
     try:
-        match_expr(w, replacements, args)
+        match_expr(w, __replacements, args)
     except DictError:
         pass
     else:
         raise NotError(w, args)
 
 
-def Or(w, replacements, *args):
+def Or(w, *args, __stop=..., __replacements=replacements):
+    checkstop(__stop)
     for i in args:
         try:
             match_expr(w, replacements, i)
@@ -338,7 +357,8 @@ def Or(w, replacements, *args):
     raise OrError(w, args)
 
 
-def And(w, replacements, *args):
+def And(w, *args, __stop=..., __replacements=replacements):
+    checkstop(__stop)
     for i in args:
         match_expr(w, replacements, i)
 
@@ -390,8 +410,9 @@ def pretty_exception(name, e):
     return DictError(msg)
 
 
-def isdict(d, replacements, *check):
-    Instance(d, replacements, dict)
+def isdict(d, *check, __stop=..., __replacements=replacements):
+    checkstop(__stop)
+    Instance(d, dict)
 
     strict = True
     if len(check) != 0 and isinstance(check[0], bool):
@@ -420,7 +441,7 @@ def isdict(d, replacements, *check):
         keys[name] = 1
 
         try:
-            match_expr(value, replacements, expr)
+            match_expr(value, __replacements, expr)
         except DictError as e:
             raise pretty_exception(name, e) from None
 
@@ -431,3 +452,20 @@ def isdict(d, replacements, *check):
                 unused.append(i)
         if len(unused) > 0:
             raise DictError("Some of fields weren't matched " + repr(unused))
+
+
+replacements.update(
+    {
+        None: isNone,
+        bool: isbool,
+        str: isstr,
+        bytes: isbytes,
+        int: isint,
+        float: isfloat,
+        list: islist,
+        set: isset,
+        frozenset: isfrozenset,
+        tuple: istuple,
+        dict: isdict,
+    }
+)
