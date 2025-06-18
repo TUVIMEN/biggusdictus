@@ -45,3 +45,47 @@ from .funcs import (
 from .load import FieldType
 
 from .scheme import Scheme
+
+
+def main():
+    import sys, json, argparse
+
+    def add_file(sche, path):
+        with open(path, "rb") as f:
+            sche.add(json.load(f))
+
+    parser = argparse.ArgumentParser(
+        description="Tool for generating validation schemes for json files",
+        add_help=False,
+    )
+
+    parser.add_argument(
+        "files",
+        metavar="FILE",
+        type=str,
+        nargs="*",
+        help="json files",
+    )
+
+    general = parser.add_argument_group("General")
+    general.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        help="Show this help message and exit",
+    )
+    general.add_argument(
+        "-p",
+        "--pedantic",
+        action="store_true",
+        help="return scheme with more detailed constrains",
+    )
+
+    args = parser.parse_args(sys.argv[1:] if sys.argv[1:] else ["-h"])
+
+    sche = Scheme()
+
+    for i in args.files:
+        add_file(sche, i)
+
+    print(sche.scheme(pedantic=args.pedantic))
