@@ -65,7 +65,7 @@ sche.dict(
     ("id", uint),
     ("avg", float),
     ("name", str, 1), # name has to be at least 1 character long
-    ("badges", list, (Or, str, uint)), # elements in list can be either str() or uint()
+    ("badges", list, (Or, (str, 1), uint)), # elements in list can be either str() with 1 as first argument or uint()
     ("info", dict,
         ("country", str),
         ("posts", uint)
